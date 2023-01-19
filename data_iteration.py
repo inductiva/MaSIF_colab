@@ -88,6 +88,10 @@ def save_protein_batch_single(protein_pair_id, P, save_path, pdb_idx):
     emb_id = 1 if pdb_idx == 1 else 2
 
     predictions = torch.sigmoid(P["iface_preds"]) if "iface_preds" in P.keys() else 0.0*embedding[:,0].view(-1, 1)
+    try: 
+        P["labels"]
+    except: 
+        P["labels"]=None
 
     labels = P["labels"].view(-1, 1) if P["labels"] is not None else 0.0 * predictions
 
@@ -333,13 +337,19 @@ def iterate(
 
             if args.search:
                 generate_matchinglabels(args, P1, P2)
-
-            if P1["labels"] is not None:
-                loss, sampled_preds, sampled_labels = compute_loss(args, P1, P2)
-            else:
+                
+            try:
+                a=P1["labels"]
+                if a is not None:
+                    loss, sampled_preds, sampled_labels = compute_loss(args, P1, P2)
+                else:
+                    loss = torch.tensor(0.0)
+                    sampled_preds = None
+                    sampled_labels = None
+            except: 
                 loss = torch.tensor(0.0)
                 sampled_preds = None
-                sampled_labels = None
+                sampled_labels = None            
 
             # Compute the gradient, update the model weights:
             if not test:
